@@ -5,11 +5,14 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Drivers are toggled off by default until we implement them (Week 2+).
-option(ENABLE_DRIVER_NVK "Build the NVK-inspired mock driver backend" OFF)
-option(ENABLE_SOFTWARE_RENDERER "Build the CPU fallback driver" OFF)
+option(ENABLE_DRIVER_NVK "Build the NVK-inspired mock driver backend" ON)
+option(ENABLE_SOFTWARE_RENDERER "Build the CPU fallback driver" ON)
 option(BUILD_SHARED_LIBS "Build libraries as shared instead of static" OFF)
 option(BUILD_TESTING "Build unit tests" ON)
+
+if(BUILD_TESTING)
+    enable_testing()
+endif()
 
 add_subdirectory(core)
 
@@ -22,6 +25,5 @@ if(ENABLE_SOFTWARE_RENDERER)
 endif()
 
 if(BUILD_TESTING)
-    enable_testing()
     add_subdirectory(tests)
 endif()

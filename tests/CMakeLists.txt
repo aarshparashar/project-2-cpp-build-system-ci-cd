@@ -14,5 +14,10 @@ add_executable(core_tests
 )
 target_link_libraries(core_tests PRIVATE gpu_core GTest::gtest_main)
 
+if(TARGET software_rasterizer)
+    target_sources(core_tests PRIVATE software_rasterizer_test.cpp)
+    target_link_libraries(core_tests PRIVATE software_rasterizer)
+endif()
+
 include(GoogleTest)
 gtest_discover_tests(core_tests)

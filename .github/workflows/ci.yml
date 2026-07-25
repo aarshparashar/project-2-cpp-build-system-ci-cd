@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  NVK_DRIVER_VERSION: "0.1.0"
+
+jobs:
+  build-and-test:
+    name: build (${{ matrix.compiler }}, ${{ matrix.build_type }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc-12, clang-16]
+        build_type: [Debug, Release]
+        include:
+          - compiler: gcc-12
+            cc: gcc-12
+            cxx: g++-12
+          - compiler: clang-16
+            cc: clang-16
+            cxx: clang++-16
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ninja-build ccache ${{ matrix.cc }} ${{ matrix.cxx }}
+
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: ccache-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ matrix.compiler }}-${{ matrix.build_type }}-
+
+      - name: Configure
+        run: |
+          cmake -G Ninja -B build \
+            -DCMAKE_C_COMPILER=${{ matrix.cc }} \
+            -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            -DENABLE_DRIVER_NVK=ON \
+            -DENABLE_SOFTWARE_RENDERER=ON
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+  package-nvk-driver:
+    name: package nvk_driver artifact
+    needs: build-and-test
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ninja-build gcc-12 g++-12
+
+      - name: Configure (Release, driver only)
+        run: |
+          cmake -G Ninja -B build \
+            -DCMAKE_C_COMPILER=gcc-12 \
+            -DCMAKE_CXX_COMPILER=g++-12 \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DENABLE_DRIVER_NVK=ON \
+            -DENABLE_SOFTWARE_RENDERER=OFF \
+            -DBUILD_TESTING=OFF
+
+      - name: Build nvk_driver
+        run: cmake --build build --target nvk_driver
+
+      # Packages the driver as its own artifact, independent of the rest of
+      # the build — mirrors how a real driver ships on its own release
+      # cadence, separate from any host application.
+      - name: Package versioned artifact
+        run: |
+          PKG_NAME="nvk_driver-${NVK_DRIVER_VERSION}-linux-x86_64-${GITHUB_SHA::8}"
+          mkdir -p "$PKG_NAME/lib"
+          cp -a build/drivers/nvk/libnvk_driver.so* "$PKG_NAME/lib/"
+          cp -a drivers/nvk/include "$PKG_NAME/include"
+          tar -czf "${PKG_NAME}.tar.gz" "$PKG_NAME"
+          echo "PKG_NAME=$PKG_NAME" >> "$GITHUB_ENV"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.PKG_NAME }}
+          path: ${{ env.PKG_NAME }}.tar.gz
+          retention-days: 30
