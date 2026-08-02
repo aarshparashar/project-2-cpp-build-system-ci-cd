@@ -61,6 +61,39 @@ jobs:
       - name: Test
         run: ctest --test-dir build --output-on-failure
 
+  sanitize:
+    name: sanitizers (ASan+UBSan, clang-16, Debug)
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ninja-build clang-16
+
+      - name: Configure
+        run: |
+          cmake -G Ninja -B build-sanitize \
+            -DCMAKE_C_COMPILER=clang-16 \
+            -DCMAKE_CXX_COMPILER=clang++-16 \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -g" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined" \
+            -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=address,undefined" \
+            -DENABLE_DRIVER_NVK=ON \
+            -DENABLE_SOFTWARE_RENDERER=ON
+
+      - name: Build
+        run: cmake --build build-sanitize
+
+      - name: Test under sanitizers
+        env:
+          ASAN_OPTIONS: halt_on_error=1:abort_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: ctest --test-dir build-sanitize --output-on-failure
+
   package-nvk-driver:
     name: package nvk_driver artifact
     needs: build-and-test

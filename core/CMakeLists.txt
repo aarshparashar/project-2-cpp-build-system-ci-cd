@@ -9,3 +9,5 @@ add_library(gpu_core
 target_include_directories(gpu_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 target_compile_features(gpu_core PUBLIC cxx_std_17)
+
+gpu_driver_stack_enable_warnings(gpu_core)

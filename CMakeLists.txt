@@ -5,6 +5,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
+include(CompilerWarnings)
+
 option(ENABLE_DRIVER_NVK "Build the NVK-inspired mock driver backend" ON)
 option(ENABLE_SOFTWARE_RENDERER "Build the CPU fallback driver" ON)
 option(BUILD_SHARED_LIBS "Build libraries as shared instead of static" OFF)
