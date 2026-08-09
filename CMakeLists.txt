@@ -18,6 +18,7 @@ if(BUILD_TESTING)
 endif()
 
 add_subdirectory(core)
+add_subdirectory(shader_compiler)
 
 if(ENABLE_DRIVER_NVK)
     add_subdirectory(drivers/nvk)

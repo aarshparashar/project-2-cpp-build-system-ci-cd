@@ -19,5 +19,10 @@ if(TARGET software_rasterizer)
     target_link_libraries(core_tests PRIVATE software_rasterizer)
 endif()
 
+if(TARGET shader_compiler_lib)
+    target_sources(core_tests PRIVATE shader_compiler_test.cpp)
+    target_link_libraries(core_tests PRIVATE shader_compiler_lib)
+endif()
+
 include(GoogleTest)
 gtest_discover_tests(core_tests)

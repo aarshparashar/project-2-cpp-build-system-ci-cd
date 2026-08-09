@@ -61,6 +61,13 @@ jobs:
       - name: Test
         run: ctest --test-dir build --output-on-failure
 
+      # Confirms the add_custom_command build-time codegen step actually ran
+      # and produced a real artifact, not just that shader_compiler compiled.
+      - name: Verify shader build artifact
+        run: |
+          test -f build/shader_compiler/triangle.spv
+          head -c4 build/shader_compiler/triangle.spv | grep -q MSPV
+
   sanitize:
     name: sanitizers (ASan+UBSan, clang-16, Debug)
     runs-on: ubuntu-24.04
