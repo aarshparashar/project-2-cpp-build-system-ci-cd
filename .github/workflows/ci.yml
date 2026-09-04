@@ -50,13 +50,17 @@ jobs:
             -DCMAKE_C_COMPILER=${{ matrix.cc }} \
             -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
             -DENABLE_DRIVER_NVK=ON \
             -DENABLE_SOFTWARE_RENDERER=ON
+        # Note: no -DCMAKE_CXX_COMPILER_LAUNCHER=ccache here — the project's
+        # own CMakeLists.txt auto-detects and enables ccache itself now.
 
       - name: Build
         run: cmake --build build
+
+      - name: Report build times
+        run: ./scripts/report_build_times.sh build
 
       - name: Test
         run: ctest --test-dir build --output-on-failure

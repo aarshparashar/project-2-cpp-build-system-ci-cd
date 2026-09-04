@@ -8,6 +8,17 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 include(CompilerWarnings)
 
+# Auto-detect ccache so every dev/CI invocation benefits without needing to
+# remember -DCMAKE_CXX_COMPILER_LAUNCHER=ccache by hand. Only applies if the
+# caller hasn't already set a launcher explicitly (e.g. CI overriding it).
+if(NOT CMAKE_CXX_COMPILER_LAUNCHER)
+    find_program(CCACHE_PROGRAM ccache)
+    if(CCACHE_PROGRAM)
+        set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
+        message(STATUS "ccache found, enabling as compiler launcher: ${CCACHE_PROGRAM}")
+    endif()
+endif()
+
 option(ENABLE_DRIVER_NVK "Build the NVK-inspired mock driver backend" ON)
 option(ENABLE_SOFTWARE_RENDERER "Build the CPU fallback driver" ON)
 option(BUILD_SHARED_LIBS "Build libraries as shared instead of static" OFF)
